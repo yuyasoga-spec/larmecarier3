@@ -1136,16 +1136,16 @@ function openStudent(id){
     return h;
   };
 
-  // ① 人生振り返り（メイン・常時展開）
-  html+=`<div class="dr-cat"><div class="catbar A">人生振り返り（0歳〜）</div>${catInner("人生振り返り")}</div>`;
-
-  // ② 感情グラフ（メイン・常時展開）
+  // ① 感情グラフ（メイン・最上部・常時展開）
   html+=`<div class="dr-cat"><div class="catbar A">感情グラフ（年齢×感情点 -100〜+100）</div>
     <div class="dr-field">
       <svg id="emoChart" viewBox="0 0 600 240" style="width:100%;background:#FAF8F6;border:1px solid var(--line);border-radius:10px;display:block"></svg>
       <div id="emoList" style="margin-top:12px;display:flex;flex-direction:column;gap:6px"></div>
       <div class="kv" style="margin-top:8px"><input class="in" id="emoAge" type="number" placeholder="年齢" style="max-width:90px"><input class="in" id="emoScore" type="number" min="-100" max="100" placeholder="点(-100〜+100)" style="max-width:130px"><input class="in" id="emoEvent" placeholder="出来事" style="flex:1"><button class="btn" onclick="addEmotion()">＋追加</button></div>
     </div></div>`;
+
+  // ② 人生振り返り（メイン・常時展開）
+  html+=`<div class="dr-cat"><div class="catbar A">人生振り返り（0歳〜）</div>${catInner("人生振り返り")}</div>`;
 
   // ③ その他の情報（プルダウンで折りたたみ）
   html+=`<div class="filter-label" style="margin:22px 0 8px">その他の情報（クリックで開閉）</div>`;
