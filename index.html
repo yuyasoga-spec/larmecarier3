@@ -353,10 +353,12 @@ code{background:var(--tint); padding:2px 6px; border-radius:2px; font-size:12px}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
         <div>
           <div class="filter-label">対象学生</div>
+          <input class="in" id="esStudentSearch" placeholder="🔍 名前で絞り込み…" autocomplete="off" oninput="filterESStudent(this.value)" style="margin-bottom:6px">
           <select class="in" id="esStudent"></select>
         </div>
         <div>
           <div class="filter-label">対象企業</div>
+          <input class="in" id="esCompanySearch" placeholder="🔍 企業名で絞り込み…" autocomplete="off" oninput="filterESCompany(this.value)" style="margin-bottom:6px">
           <select class="in" id="esCompany" onchange="updateSampleHint()"></select>
         </div>
       </div>
@@ -859,7 +861,8 @@ function jumpToSample(cid){
   closeDrawer();
   switchView("es");
   setTimeout(()=>{
-    const cs=document.getElementById("esCompany"); if(cs){ cs.value=cid; updateSampleHint(); }
+    const cS=document.getElementById("esCompanySearch"); if(cS) cS.value="";
+    const cs=document.getElementById("esCompany"); if(cs){ cs.innerHTML=companyOptions("",cid); cs.value=cid; updateSampleHint(); }
     openSampleManager();
   },180);
 }
@@ -1321,13 +1324,44 @@ function initES(){
 }
 function saveESLocal(){ lsSet("larme_es_logs", JSON.stringify(ES_LOGS)); lsSet("larme_es_samples", JSON.stringify(ES_SAMPLES)); }
 
+function studentOptions(q, keepId){
+  const qq=(q||"").toLowerCase().trim();
+  const list=STUDENTS.filter(s=> !qq || (s.name||"").toLowerCase().includes(qq) || s.id===keepId);
+  return '<option value="">学生を選択…</option>'+list.map(s=>`<option value="${s.id}">${esc(s.name||"（名前未入力）")}</option>`).join("");
+}
+function companyOptions(q, keepId){
+  const qq=(q||"").toLowerCase().trim();
+  const list=[...DB].sort((a,b)=>(a.name||"").localeCompare(b.name||"","ja")).filter(c=> !qq || (c.name||"").toLowerCase().includes(qq) || c.id===keepId);
+  return '<option value="">企業を選択…</option>'+list.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
+}
 function populateESSelectors(){
   const ss=document.getElementById("esStudent"); if(!ss) return;
-  ss.innerHTML='<option value="">学生を選択…</option>'+STUDENTS.map(s=>`<option value="${s.id}">${esc(s.name||"（名前未入力）")}</option>`).join("");
+  const sS=document.getElementById("esStudentSearch"); if(sS) sS.value="";
+  const cS=document.getElementById("esCompanySearch"); if(cS) cS.value="";
+  ss.innerHTML=studentOptions("", ss.value);
   const cs=document.getElementById("esCompany");
-  cs.innerHTML='<option value="">企業を選択…</option>'+[...DB].sort((a,b)=>(a.name||"").localeCompare(b.name||"","ja")).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  cs.innerHTML=companyOptions("", cs.value);
   const lf=document.getElementById("logFilter");
   if(lf) lf.innerHTML='<option value="all">すべての学生</option>'+STUDENTS.map(s=>`<option value="${s.id}">${esc(s.name||"（名前未入力）")}</option>`).join("");
+}
+// 検索ボックスで対象学生を絞り込み（現在選択は保持。1件に絞れたら自動選択）
+function filterESStudent(q){
+  const ss=document.getElementById("esStudent"); if(!ss) return;
+  const cur=ss.value;
+  const qq=(q||"").toLowerCase().trim();
+  const matches=STUDENTS.filter(s=>(s.name||"").toLowerCase().includes(qq));
+  ss.innerHTML=studentOptions(q, cur);
+  if(qq && matches.length===1) ss.value=matches[0].id;
+  else if([...ss.options].some(o=>o.value===cur)) ss.value=cur;
+}
+function filterESCompany(q){
+  const cs=document.getElementById("esCompany"); if(!cs) return;
+  const cur=cs.value;
+  const qq=(q||"").toLowerCase().trim();
+  const matches=[...DB].filter(c=>(c.name||"").toLowerCase().includes(qq));
+  cs.innerHTML=companyOptions(q, cur);
+  if(qq && matches.length===1){ cs.value=matches[0].id; updateSampleHint(); }
+  else if([...cs.options].some(o=>o.value===cur)) cs.value=cur;
 }
 function updateSampleHint(){
   const cid=document.getElementById("esCompany").value;
@@ -1791,7 +1825,7 @@ function renderESLogs(){
     <div style="font-size:12.5px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(l.body)}</div>
   </div>`).join("");
 }
-function openLog(id){ const l=ES_LOGS.find(x=>x.id===id); if(!l) return; switchView("es"); document.getElementById("esStudent").value=l.studentId; document.getElementById("esCompany").value=l.companyId; document.getElementById("esQuestion").value=l.question||""; document.getElementById("esBody").value=l.body||""; document.getElementById("esLimit").value=l.limit||""; updateSampleHint(); if(l.kind==="draft") renderDraftResult(l); else renderESResult(l); }
+function openLog(id){ const l=ES_LOGS.find(x=>x.id===id); if(!l) return; switchView("es"); populateESSelectors(); document.getElementById("esStudent").value=l.studentId; document.getElementById("esCompany").value=l.companyId; document.getElementById("esQuestion").value=l.question||""; document.getElementById("esBody").value=l.body||""; document.getElementById("esLimit").value=l.limit||""; updateSampleHint(); if(l.kind==="draft") renderDraftResult(l); else renderESResult(l); }
 
 /* サンプルES管理（モーダル風にドロワー再利用） */
 function openSampleManager(){
