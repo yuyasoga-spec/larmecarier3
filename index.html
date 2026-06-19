@@ -161,6 +161,13 @@ textarea.in{resize:vertical; min-height:64px; line-height:1.6}
 .dr-field{margin-top:12px}
 .dr-field .fieldhead{justify-content:space-between}
 .dr-field .fieldhead .left{display:flex; align-items:center; gap:8px}
+.dr-acc{border:1px solid var(--line); border-radius:6px; margin-bottom:10px; background:#fff; overflow:hidden}
+.dr-acc>summary{list-style:none; cursor:pointer; padding:11px 14px; font-weight:700; font-size:13px; color:var(--slate-ink); background:var(--tint); display:flex; align-items:center}
+.dr-acc>summary::-webkit-details-marker{display:none}
+.dr-acc>summary::after{content:"▾"; margin-left:auto; color:var(--muted); transition:transform .2s}
+.dr-acc[open]>summary{border-bottom:1px solid var(--line)}
+.dr-acc[open]>summary::after{transform:rotate(180deg)}
+.dr-acc-body{padding:8px 14px 14px}
 .saveflash{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--ink); color:#fff; padding:11px 22px; border-radius:30px; font-weight:700; font-size:13px; transition:.3s; z-index:60; box-shadow:var(--shadow)}
 .saveflash.on{transform:translateX(-50%)}
 
@@ -1112,51 +1119,63 @@ function openStudent(id){
   s.checks=s.checks||{}; s.goals=s.goals||{final:"",items:[]}; s.emotions=s.emotions||[]; s.customFields=s.customFields||[];
   let html=`<div class="dr-hd"><div><div class="eyebrow">学生情報</div><div class="dr-name">${esc(s.name||"学生")}</div></div><button class="x" onclick="closeDrawer()">×</button></div><div class="dr-body">
     <div style="display:flex;gap:8px;margin-bottom:18px"><button class="btn primary" onclick="saveStudent()">変更を保存</button><button class="btn ghost" style="color:var(--danger);margin-left:auto" onclick="if(confirm('この学生を削除しますか？')){removeStudent('${id}');closeDrawer()}">削除</button></div>`;
-  // テキスト項目（カテゴリ別）
-  ["プロフィール","好き","経歴","その他","保有スキル・経験","模擬面接","人生振り返り"].forEach(cat=>{
-    html+=`<div class="dr-cat"><div class="catbar A">${cat}</div>`;
-    STU_FIELDS.filter(f=>f.cat===cat).forEach(f=>{ html+=`<div class="dr-field"><div class="fieldhead"><span class="lbl">${f.l}</span></div><textarea class="in stu-edit" data-k="${f.k}">${esc(s[f.k]||"")}</textarea></div>`; });
-    // カスタム項目（自由追加・Excel取り込み分も含む）
+  const reopen=window._reopenCat; window._reopenCat=null;
+  // カテゴリの中身（テキスト項目＋カスタム項目＋追加ボタン）を作るヘルパー
+  const catInner=(cat)=>{
+    let h="";
+    STU_FIELDS.filter(f=>f.cat===cat).forEach(f=>{ h+=`<div class="dr-field"><div class="fieldhead"><span class="lbl">${f.l}</span></div><textarea class="in stu-edit" data-k="${f.k}">${esc(s[f.k]||"")}</textarea></div>`; });
     (s.customFields||[]).forEach((cf,idx)=>{ if((cf.cat||"人生振り返り")!==cat) return;
-      html+=`<div class="dr-field" style="border-left:2px solid var(--rose);padding-left:10px">
+      h+=`<div class="dr-field" style="border-left:2px solid var(--rose);padding-left:10px">
         <div class="fieldhead" style="gap:6px">
           <input class="in cf-label" data-idx="${idx}" value="${esc(cf.label||"")}" placeholder="項目名（例：尊敬する人）" style="font-weight:700;font-size:13px;padding:6px 10px;flex:1">
           <button class="btn ghost" onclick="rmCustomField(${idx})" style="color:var(--danger);padding:2px 9px" title="この項目を削除">×</button>
         </div>
         <textarea class="in cf-val" data-idx="${idx}" placeholder="内容">${esc(cf.value||"")}</textarea></div>`;
     });
-    html+=`<button class="btn ghost" style="margin-top:4px;font-size:12px" onclick="addCustomField('${cat}')">＋ この区分に項目を追加</button>`;
-    html+=`</div>`;
-  });
-  // ○×式チェックリスト
-  html+=`<div class="dr-cat"><div class="catbar B">スキルチェック（〇×式）</div>`;
-  STU_CHECKS.forEach(grp=>{
-    html+=`<div class="dr-field"><div class="fieldhead"><span class="lbl">■${grp.cat}</span></div><div style="display:flex;flex-direction:column;gap:6px">`;
-    grp.items.forEach(item=>{
-      const val=s.checks[item]||"";
-      html+=`<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff">
-        <span style="flex:1;font-size:13px">${esc(item)}</span>
-        <button class="chk-btn ${val==='o'?'on':''}" data-item="${esc(item)}" data-v="o" onclick="toggleCheck(this)" style="width:32px;height:28px;border-radius:6px;border:1px solid var(--line);background:${val==='o'?'#3E8E6E':'#fff'};color:${val==='o'?'#fff':'var(--muted)'};font-weight:700;cursor:pointer">〇</button>
-        <button class="chk-btn ${val==='x'?'on':''}" data-item="${esc(item)}" data-v="x" onclick="toggleCheck(this)" style="width:32px;height:28px;border-radius:6px;border:1px solid var(--line);background:${val==='x'?'#C0504D':'#fff'};color:${val==='x'?'#fff':'var(--muted)'};font-weight:700;cursor:pointer">×</button>
-      </div>`;
-    });
-    html+=`</div></div>`;
-  });
-  html+=`</div>`;
-  // 最終目標
-  html+=`<div class="dr-cat"><div class="catbar C">最終目標と達成項目</div>
-    <div class="dr-field"><div class="fieldhead"><span class="lbl">■最終目標</span></div><textarea class="in" id="goalFinal" placeholder="達成したい最終的なゴール">${esc(s.goals.final||"")}</textarea></div>
-    <div class="dr-field"><div class="fieldhead"><span class="lbl">■最終目標に向けて達成すべき項目</span></div>
-      <div id="goalItems" style="display:flex;flex-direction:column;gap:8px"></div>
-      <button class="btn" style="margin-top:8px" onclick="addGoalItem()">＋項目を追加</button>
-    </div></div>`;
-  // 感情グラフ
+    h+=`<button class="btn ghost" style="margin-top:4px;font-size:12px" onclick="addCustomField('${cat}')">＋ この区分に項目を追加</button>`;
+    return h;
+  };
+
+  // ① 人生振り返り（メイン・常時展開）
+  html+=`<div class="dr-cat"><div class="catbar A">人生振り返り（0歳〜）</div>${catInner("人生振り返り")}</div>`;
+
+  // ② 感情グラフ（メイン・常時展開）
   html+=`<div class="dr-cat"><div class="catbar A">感情グラフ（年齢×感情点 -100〜+100）</div>
     <div class="dr-field">
       <svg id="emoChart" viewBox="0 0 600 240" style="width:100%;background:#FAF8F6;border:1px solid var(--line);border-radius:10px;display:block"></svg>
       <div id="emoList" style="margin-top:12px;display:flex;flex-direction:column;gap:6px"></div>
       <div class="kv" style="margin-top:8px"><input class="in" id="emoAge" type="number" placeholder="年齢" style="max-width:90px"><input class="in" id="emoScore" type="number" min="-100" max="100" placeholder="点(-100〜+100)" style="max-width:130px"><input class="in" id="emoEvent" placeholder="出来事" style="flex:1"><button class="btn" onclick="addEmotion()">＋追加</button></div>
     </div></div>`;
+
+  // ③ その他の情報（プルダウンで折りたたみ）
+  html+=`<div class="filter-label" style="margin:22px 0 8px">その他の情報（クリックで開閉）</div>`;
+  ["プロフィール","好き","経歴","その他","保有スキル・経験","模擬面接"].forEach(cat=>{
+    html+=`<details class="dr-acc"${reopen===cat?" open":""}><summary>${cat}</summary><div class="dr-acc-body">${catInner(cat)}</div></details>`;
+  });
+
+  // スキルチェック（折りたたみ）
+  let checkInner="";
+  STU_CHECKS.forEach(grp=>{
+    checkInner+=`<div class="dr-field"><div class="fieldhead"><span class="lbl">■${grp.cat}</span></div><div style="display:flex;flex-direction:column;gap:6px">`;
+    grp.items.forEach(item=>{ const val=s.checks[item]||"";
+      checkInner+=`<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff">
+        <span style="flex:1;font-size:13px">${esc(item)}</span>
+        <button class="chk-btn ${val==='o'?'on':''}" data-item="${esc(item)}" data-v="o" onclick="toggleCheck(this)" style="width:32px;height:28px;border-radius:6px;border:1px solid var(--line);background:${val==='o'?'#3E8E6E':'#fff'};color:${val==='o'?'#fff':'var(--muted)'};font-weight:700;cursor:pointer">〇</button>
+        <button class="chk-btn ${val==='x'?'on':''}" data-item="${esc(item)}" data-v="x" onclick="toggleCheck(this)" style="width:32px;height:28px;border-radius:6px;border:1px solid var(--line);background:${val==='x'?'#C0504D':'#fff'};color:${val==='x'?'#fff':'var(--muted)'};font-weight:700;cursor:pointer">×</button>
+      </div>`;
+    });
+    checkInner+=`</div></div>`;
+  });
+  html+=`<details class="dr-acc"><summary>スキルチェック（〇×式）</summary><div class="dr-acc-body">${checkInner}</div></details>`;
+
+  // 最終目標（折りたたみ）
+  html+=`<details class="dr-acc"><summary>最終目標と達成項目</summary><div class="dr-acc-body">
+    <div class="dr-field"><div class="fieldhead"><span class="lbl">■最終目標</span></div><textarea class="in" id="goalFinal" placeholder="達成したい最終的なゴール">${esc(s.goals.final||"")}</textarea></div>
+    <div class="dr-field"><div class="fieldhead"><span class="lbl">■最終目標に向けて達成すべき項目</span></div>
+      <div id="goalItems" style="display:flex;flex-direction:column;gap:8px"></div>
+      <button class="btn" style="margin-top:8px" onclick="addGoalItem()">＋項目を追加</button>
+    </div></div></details>`;
+
   html+=`</div>`;
   document.getElementById("drawer").innerHTML=html;
   document.getElementById("scrim").classList.add("on"); document.getElementById("drawer").classList.add("on");
@@ -1198,8 +1217,8 @@ function syncDrawer(){
   document.querySelectorAll("#drawer .cf-label").forEach(el=>{ const i=+el.dataset.idx; if(s.customFields[i]) s.customFields[i].label=el.value; });
   document.querySelectorAll("#drawer .cf-val").forEach(el=>{ const i=+el.dataset.idx; if(s.customFields[i]) s.customFields[i].value=el.value; });
 }
-function addCustomField(cat){ syncDrawer(); const s=STUDENTS.find(x=>x.id===curStu); if(!s) return; s.customFields=s.customFields||[]; s.customFields.push({cat:cat||"人生振り返り",label:"",value:""}); openStudent(curStu); }
-function rmCustomField(idx){ syncDrawer(); const s=STUDENTS.find(x=>x.id===curStu); if(!s||!s.customFields) return; s.customFields.splice(idx,1); openStudent(curStu); }
+function addCustomField(cat){ syncDrawer(); const s=STUDENTS.find(x=>x.id===curStu); if(!s) return; s.customFields=s.customFields||[]; s.customFields.push({cat:cat||"人生振り返り",label:"",value:""}); window._reopenCat=cat; openStudent(curStu); }
+function rmCustomField(idx){ syncDrawer(); const s=STUDENTS.find(x=>x.id===curStu); if(!s||!s.customFields) return; window._reopenCat=(s.customFields[idx]||{}).cat; s.customFields.splice(idx,1); openStudent(curStu); }
 
 function addEmotion(){
   const s=STUDENTS.find(x=>x.id===curStu); if(!s) return;
