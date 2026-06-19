@@ -13,6 +13,7 @@
 <!-- Firebase (compat). 未設定ならローカルモードで動作します -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <!-- SheetJS: 学生情報のExcel(.xlsx)取り込み用 -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
@@ -61,6 +62,20 @@ header{
 .sync{font-size:11px; padding:4px 10px; border-radius:20px; font-weight:700; border:1px solid var(--line); display:flex; align-items:center; gap:6px}
 .sync .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
 .sync.live .dot{background:var(--ok)} .sync.local .dot{background:var(--amber)}
+.userbox{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted)}
+.userbox .ue{font-weight:700; color:var(--ink); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.userbox .lo{border:1px solid var(--line); background:#fff; border-radius:2px; padding:4px 10px; font-size:11px; color:var(--muted); cursor:pointer}
+.userbox .lo:hover{border-color:var(--ink); color:var(--ink)}
+#loginGate{position:fixed; inset:0; z-index:100; background:linear-gradient(160deg,#fff 0%,var(--tint) 100%); display:flex; align-items:center; justify-content:center; padding:24px}
+.lg-card{max-width:420px; width:100%; text-align:center}
+.lg-card .lg-eyebrow{font-size:10px; letter-spacing:.24em; text-transform:uppercase; color:var(--rose); font-weight:700; margin-bottom:10px}
+.lg-card h1{font-family:var(--serif); font-size:30px; margin:0 0 6px; color:var(--ink); letter-spacing:-.01em}
+.lg-card .lg-sub{color:var(--muted); font-size:13px; margin:0 0 28px; line-height:1.8}
+.lg-btn{display:inline-flex; align-items:center; gap:10px; border:1px solid var(--ink); background:var(--ink); color:#fff; padding:12px 22px; border-radius:3px; font-size:14px; font-weight:700; cursor:pointer; transition:.15s}
+.lg-btn:hover{background:var(--rose); border-color:var(--rose)}
+.lg-btn:disabled{opacity:.6; cursor:default}
+.lg-note{margin-top:22px; font-size:11.5px; color:var(--muted)}
+.lg-err{margin-top:18px; font-size:12.5px; color:var(--danger); background:#FBEAE8; border:1px solid #F0CFCB; border-radius:4px; padding:10px 14px}
 
 main{max-width:1240px; margin:0 auto; padding:40px 32px 90px}
 .view{display:none} .view.on{display:block; animation:fade .3s ease}
@@ -245,8 +260,12 @@ code{background:var(--tint); padding:2px 6px; border-radius:2px; font-size:12px}
       <button class="tab" data-v="settings">設定</button>
     </nav>
     <div id="sync" class="sync local"><span class="dot"></span><span id="syncTxt">ローカル</span></div>
+    <div id="userBox" class="userbox" style="display:none"></div>
   </div>
 </header>
+
+<!-- ログイン画面（Firebase設定時のみ表示） -->
+<div id="loginGate" style="display:none"></div>
 
 <main>
   <!-- ============ SEARCH ============ -->
@@ -425,8 +444,12 @@ code{background:var(--tint); padding:2px 6px; border-radius:2px; font-size:12px}
 ============================================================ */
 // Firebase Console > プロジェクト設定 > マイアプリ から取得して貼り付け
 const FIREBASE_CONFIG = {
-  // apiKey: "...", authDomain: "...", projectId: "...",
-  // storageBucket: "...", messagingSenderId: "...", appId: "..."
+  apiKey: "AIzaSyBZd7LrgKAOwJXrxBgHqkhOebGXyqwwVbM",
+  authDomain: "estennsaku-e1277.firebaseapp.com",
+  projectId: "estennsaku-e1277",
+  storageBucket: "estennsaku-e1277.firebasestorage.app",
+  messagingSenderId: "143974700557",
+  appId: "1:143974700557:web:eb0fd53a95db6a4cd6a744"
 };
 
 // Anthropic APIキー（運用方式）
@@ -1962,12 +1985,71 @@ function seedDemo(silent){
 /* ============================================================
    起動処理（ログインなし版）
 ============================================================ */
-function bootApp(){
+let CURRENT_USER=null;
+function startAppData(){
+  if(window._appStarted) return; window._appStarted=true;
   initFB();
   initStudents();
   initES();
   // Firestoreが使えるならAPIキー読み込み、使えないならローカルから
   setTimeout(loadSharedAPIKey, 500);
+}
+function bootApp(){
+  if(FIREBASE_CONFIG && FIREBASE_CONFIG.projectId){
+    try{ if(firebase.apps.length===0) firebase.initializeApp(FIREBASE_CONFIG); }catch(e){ console.error(e); }
+    requireLogin();
+  } else {
+    startAppData(); // ローカルモード（Firebase未設定）
+  }
+}
+function requireLogin(){
+  renderLoginGate("checking");
+  firebase.auth().onAuthStateChanged(user=>{
+    if(!user){ renderLoginGate(window._authDenied?"denied":"login"); return; }
+    const email=(user.email||"").toLowerCase();
+    const domain=email.split("@")[1]||"";
+    if(ALLOWED_DOMAINS.length && ALLOWED_DOMAINS.indexOf(domain)<0){
+      window._authDenied=email; firebase.auth().signOut(); renderLoginGate("denied"); return;
+    }
+    window._authDenied=null; CURRENT_USER=user;
+    const gate=document.getElementById("loginGate"); if(gate) gate.style.display="none";
+    showUserBox(user); startAppData();
+  });
+}
+function login(){
+  const btn=document.getElementById("lgBtn"); if(btn){ btn.disabled=true; btn.textContent="ログイン中…"; }
+  const p=new firebase.auth.GoogleAuthProvider();
+  if(ALLOWED_DOMAINS[0]) p.setCustomParameters({hd:ALLOWED_DOMAINS[0]});
+  firebase.auth().signInWithPopup(p).catch(e=>{
+    renderLoginGate("login");
+    const er=document.getElementById("lgErr"); if(er){ er.style.display="block"; er.textContent="ログインに失敗しました："+(e.code||e.message); }
+  });
+}
+function logout(){ if(confirm("ログアウトしますか？")){ firebase.auth().signOut().then(()=>location.reload()); } }
+function tryAnother(){ window._authDenied=null; renderLoginGate("login"); }
+function showUserBox(user){
+  const ub=document.getElementById("userBox"); if(ub){ ub.style.display="flex";
+    ub.innerHTML=`<span class="ue" title="${esc(user.email||"")}">${esc(user.email||"")}</span><button class="lo" onclick="logout()">ログアウト</button>`; }
+  const sync=document.getElementById("sync"); if(sync) sync.style.display="none";
+}
+function renderLoginGate(mode){
+  const gate=document.getElementById("loginGate"); if(!gate) return;
+  gate.style.display="flex";
+  const dom=ALLOWED_DOMAINS.join(" / ");
+  if(mode==="checking"){
+    gate.innerHTML=`<div class="lg-card"><div class="lg-eyebrow">LARMEキャリア</div><h1>読み込み中…</h1><div class="lg-sub">ログイン状態を確認しています。</div></div>`;
+  } else if(mode==="denied"){
+    gate.innerHTML=`<div class="lg-card"><div class="lg-eyebrow">アクセスできません</div><h1>権限がありません</h1>
+      <div class="lg-sub">このツールは <b>@${esc(dom)}</b> のアカウントのみ利用できます。<br>会社のアカウントでログインし直してください。</div>
+      <button class="lg-btn" onclick="tryAnother()">別のアカウントでログイン</button></div>`;
+  } else {
+    gate.innerHTML=`<div class="lg-card"><div class="lg-eyebrow">LARMEキャリア｜企業リサーチDB</div>
+      <h1>ログイン</h1>
+      <div class="lg-sub">エンタメ業界特化の企業リサーチ＆ES添削ツール。<br><b>@${esc(dom)}</b> の会社アカウントでログインしてください。</div>
+      <button class="lg-btn" id="lgBtn" onclick="login()"><span style="font-size:16px">🔑</span> 会社のGoogleアカウントでログイン</button>
+      <div class="lg-err" id="lgErr" style="display:none"></div>
+      <div class="lg-note">ログインすると、社内メンバー全員のデータが自動で共有・保存されます。</div></div>`;
+  }
 }
 bootApp();
 </script>
