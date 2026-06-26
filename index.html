@@ -102,6 +102,9 @@ main{max-width:1240px; margin:0 auto; padding:40px 32px 90px}
 .eyebrow{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--rose); font-weight:700}
 .in{width:100%; padding:11px 13px; border:1px solid rgba(255,255,255,0.18); border-radius:2px; background:rgba(255,255,255,0.05); color:var(--ink); transition:.15s}
 .in:focus{outline:none; border-color:var(--rose); box-shadow:0 0 0 3px var(--rose-bg)}
+/* ドロップダウンの選択肢は黒文字・白背景で視認性を確保（ダークテーマでも読めるように） */
+select.in{color:var(--ink)}
+select.in option, select option{background:#ffffff; color:#111111}
 textarea.in{resize:vertical; min-height:64px; line-height:1.6}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -152,6 +155,16 @@ textarea.in{resize:vertical; min-height:64px; line-height:1.6}
 .toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px}
 .toolbar .in{flex:1; min-width:200px}
 .chips{display:flex; gap:7px; flex-wrap:wrap; margin-bottom:18px}
+/* 絞り込み（業種・タグ）の収納トグル */
+.filterPanel{margin-bottom:18px}
+.filterToggle{display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; padding:10px 14px; border:1px solid var(--line); background:rgba(255,255,255,0.05); border-radius:2px; color:var(--ink); font-size:13px; font-weight:600; cursor:pointer; transition:.15s}
+.filterToggle:hover{border-color:var(--line-strong)}
+.filterToggle .ft-caret{display:inline-block; transition:transform .18s; color:var(--muted); margin-right:8px}
+.filterToggle.open .ft-caret{transform:rotate(90deg); color:var(--rose)}
+.filterToggle .ft-count{background:var(--rose); color:#07140A; font-size:11px; font-weight:700; padding:2px 9px; border-radius:999px; min-width:20px; text-align:center}
+.filterBody{padding-top:16px}
+.filterBody[hidden]{display:none}
+.filterBody .chips:last-child{margin-bottom:0}
 .chip{border:1px solid var(--line); background:rgba(255,255,255,0.05); padding:7px 14px; border-radius:2px; font-size:12.5px; font-weight:500; color:var(--muted); transition:.15s}
 .chip:hover{border-color:var(--line-strong); color:var(--ink)}
 .chip.on{background:var(--rose); color:#07140A; border-color:var(--rose); font-weight:700}
@@ -310,10 +323,18 @@ code{background:var(--tint); padding:2px 6px; border-radius:2px; font-size:12px}
         <option value="fill">情報の充実度順</option>
       </select>
     </div>
-    <div class="filter-label">業種でしぼる</div>
-    <div class="chips" id="catChips"></div>
-    <div class="filter-label" id="tagLabel">タグでしぼる（複数選択でAND）</div>
-    <div class="chips" id="tagChips"></div>
+    <div class="filterPanel" id="filterPanel">
+      <button type="button" class="filterToggle" id="filterToggle" onclick="toggleFilters()" aria-expanded="false">
+        <span><span class="ft-caret">▸</span>絞り込み（業種・タグ）</span>
+        <span class="ft-count" id="filterCount" style="display:none">0</span>
+      </button>
+      <div class="filterBody" id="filterBody" hidden>
+        <div class="filter-label">業種でしぼる</div>
+        <div class="chips" id="catChips"></div>
+        <div class="filter-label" id="tagLabel">タグでしぼる（複数選択でAND）</div>
+        <div class="chips" id="tagChips"></div>
+      </div>
+    </div>
     <div class="grid" id="dbGrid"></div>
   </section>
 
@@ -723,7 +744,19 @@ function renderCatChips(){
     `<button class="chip ${activeCat===c?"on":""}" onclick="setCat('${esc(c)}')">${c==="all"?"すべて":esc(c)}</button>`
   ).join("");
 }
-function setCat(c){ activeCat=c; renderCatChips(); renderDB(); }
+function setCat(c){ activeCat=c; renderCatChips(); renderDB(); updateFilterCount(); }
+function toggleFilters(){
+  const t=$("#filterToggle"), b=$("#filterBody");
+  const willOpen=b.hasAttribute("hidden");
+  if(willOpen){ b.removeAttribute("hidden"); t.classList.add("open"); t.setAttribute("aria-expanded","true"); }
+  else { b.setAttribute("hidden",""); t.classList.remove("open"); t.setAttribute("aria-expanded","false"); }
+}
+function updateFilterCount(){
+  const badge=$("#filterCount"); if(!badge) return;
+  const n=(activeCat&&activeCat!=="all"?1:0)+(activeTags?activeTags.size:0);
+  if(n>0){ badge.textContent=n; badge.style.display="inline-block"; }
+  else { badge.style.display="none"; }
+}
 
 function allTags(){
   const m={}; DB.forEach(c=>(c.tags||[]).forEach(t=>{ m[t]=(m[t]||0)+1; }));
@@ -738,7 +771,7 @@ function renderTagChips(){
 function toggleTag(el){
   const t=el.dataset.tag;
   if(activeTags.has(t)) activeTags.delete(t); else activeTags.add(t);
-  renderTagChips(); renderDB();
+  renderTagChips(); renderDB(); updateFilterCount();
 }
 
 function fillCount(c){ return AI_FIELDS.concat(FIELDS.filter(f=>f.src==="hand")).filter(f=>!f.meta && (c[f.k]||"").trim()).length; }
@@ -2106,7 +2139,7 @@ function exportJSON(){
 function seedDemo(silent){
   const seed = [
   {
-    id:uid(), name:"松竹", category:"映画・演劇",
+    id:"seed_co_matsutake", name:"松竹", category:"映画・演劇",
     business_model:"映画の製作・配給・興行までを自社で一貫して担う垂直統合型。自社劇場網（MOVIX、丸の内ピカデリー等）を活かした戦略的な公開スケジュール・プロモーションが可能。邦画の自社製作に加え、洋画の買い付け・ローカライズにも積極的。",
     philosophy:"日本文化の伝統を継承、発展させ、世界文化に貢献する。\n時代のニーズをとらえ、あらゆる世代に豊かで多様なコンテンツをお届けする。",
     achievements:"歌舞伎・時代劇など伝統文化を基盤に、シネマ歌舞伎・海外公演など「守りながら攻める」展開。映画『国宝』のNY先行上映など海外での認知拡大。",
@@ -2121,7 +2154,7 @@ function seedDemo(silent){
     reviews:"", notes:"", tags:["映画・演劇","27卒選考中","インターンあり","上場企業","伝統×エンタメ"], updated_at:Date.now()-86400000*3
   },
   {
-    id:uid(), name:"吉本興業", category:"芸能・お笑い",
+    id:"seed_co_yoshimoto", name:"吉本興業", category:"芸能・お笑い",
     business_model:"BSよしもと・FANY等の自社プラットフォーム運営。オリジナルIP開発（Netflix/Amazon/Disney+等とのコンテンツ開発）、FANY関連のコミュニティビジネス、地方創生（住みます芸人）、LAPONE系のアイドルプロデュース事業など多角展開。",
     philosophy:"すべての人が自分らしく生きていけるように。\n笑いを「心のインフラ」に。",
     achievements:"近年は万博・国連関連の仕事が増加。保有IPとのシナジーを意識。社会貢献・クリーンなイメージの業務も拡大。",
@@ -2139,7 +2172,7 @@ function seedDemo(silent){
     updated_at:Date.now()-86400000*2
   },
   {
-    id:uid(), name:"ソニーミュージック", category:"音楽レーベル",
+    id:"seed_co_sonymusic", name:"ソニーミュージック", category:"音楽レーベル",
     business_model:"音楽のレーベル・マネジメントを中核に、アーティストの発掘・育成（A&R）からライブ・映像・グッズまで展開する総合エンタテインメント企業。",
     philosophy:"ふたつとない、いくつもの感動を。\nAlways in all ways",
     achievements:"要確認（最新の所属アーティスト・受賞・話題はリサーチで更新）",
@@ -2158,7 +2191,7 @@ function seedDemo(silent){
   // TGCキャリアCSVからの取り込み（埋め込み済みデータ）
   try{
     const node=document.getElementById("csvSeed");
-    if(node && node.textContent.trim()){ JSON.parse(node.textContent).forEach(c=>{ c.id=uid(); seed.push(c); }); }
+    if(node && node.textContent.trim()){ JSON.parse(node.textContent).forEach((c,i)=>{ c.id="seed_csv_"+i; seed.push(c); }); }
   }catch(e){ console.warn("csvSeed parse failed", e); }
   if(useFB){ seed.forEach(s=>{ const {id,...d}=s; db.collection("larme_companies").doc(id).set(d); }); }
   else { DB = seed; saveLocal(); if(!silent) afterLoad(); }
