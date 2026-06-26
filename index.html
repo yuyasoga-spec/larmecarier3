@@ -8,7 +8,9 @@
 <!-- Premium typography: 明朝（見出し）＋ サンセリフ（本文） -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<!-- Spline 3D viewer（背景用） -->
+<script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.48/build/spline-viewer.js"></script>
 
 <!-- Firebase (compat). 未設定ならローカルモードで動作します -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -19,34 +21,41 @@
 
 <style>
 :root{
-  /* McKinsey系：ディープネイビー基調＋ヴィヴィッドブルーのアクセント、クールな無彩色 */
-  --bg:#FFFFFF; --panel:#FFFFFF; --ink:#051C2C; --muted:#5B6B7B; --line:#E4E8EC; --line-strong:#0A1A2F;
-  --tint:#F4F6F8;                                            /* 薄いセクション背景 */
-  --rose:#2251FF; --rose-bg:#EEF2FF; --rose-ink:#0A1F66;     /* primary accent → vibrant blue */
-  --slate:#34495E; --slate-bg:#EBEFF4; --slate-ink:#27384B;
-  --amber:#9A6A2C; --amber-bg:#F4EDE2; --amber-ink:#714C1F;
-  --ai:#3D4BC4; --ai-bg:#EEF0FB; --hand:#9A6A2C; --hand-bg:#F4EDE2;
-  --ok:#1B8A6B; --danger:#C0392B;
-  --shadow:0 1px 2px rgba(5,28,44,.04);
-  --shadow-lift:0 18px 40px -12px rgba(5,28,44,.18);
-  --radius:3px;
-  --serif:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",Georgia,serif;
-  --sans:"Noto Sans JP","Hiragino Sans","Hiragino Kaku Gothic ProN","Segoe UI",system-ui,sans-serif;
-  --cal-intern:#1B8A6B; --cal-selection:#2251FF; --cal-deadline:#C0392B; --cal-briefing:#34495E; --cal-event:#7A869A;
+  /* SENTINEL系：ダークチャコール＋ビビッドグリーンのアクセント。3D背景の上に乗るガラス調パネル */
+  --bg:#0E0E0E; --panel:rgba(22,22,24,0.84); --ink:#F2F3F3; --muted:#9AA0A0; --line:rgba(255,255,255,0.12); --line-strong:#F2F3F3;
+  --tint:rgba(255,255,255,0.05);                            /* 薄いセクション背景 */
+  --rose:#16E000; --rose-bg:rgba(22,224,0,0.13); --rose-ink:#7BFF7E;   /* primary accent → vivid green */
+  --slate:#9AA8B0; --slate-bg:rgba(255,255,255,0.06); --slate-ink:#C7D0D6;
+  --amber:#D8A24A; --amber-bg:rgba(216,162,74,0.14); --amber-ink:#E8C089;
+  --ai:#7CF08A; --ai-bg:rgba(22,224,0,0.10); --hand:#D8A24A; --hand-bg:rgba(216,162,74,0.14);
+  --ok:#22D07A; --danger:#FF5A5A;
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+  --shadow-lift:0 22px 50px -14px rgba(0,0,0,.65);
+  --radius:6px;
+  --serif:"Sora","Noto Sans JP","Hiragino Sans",sans-serif;
+  --sans:"Sora","Noto Sans JP","Hiragino Sans","Segoe UI",system-ui,sans-serif;
+  --cal-intern:#22D07A; --cal-selection:#16E000; --cal-deadline:#FF5A5A; --cal-briefing:#9AA8B0; --cal-event:#7A869A;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
+html{background:#0A0A0A}
 body{
-  background:var(--bg); color:var(--ink);
+  background:transparent; color:var(--ink);
   font-family:var(--sans);
   font-size:14px; line-height:1.7; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
 }
+/* 3D背景（全画面・固定） */
+#bg3d{position:fixed; inset:0; z-index:-2; pointer-events:none}
+#bg3d spline-viewer{width:100%; height:100%; display:block}
+#bg3d spline-viewer::part(logo){display:none}
+#bg3dveil{position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background:radial-gradient(120% 90% at 70% 10%, rgba(10,10,10,.45) 0%, rgba(10,10,10,.78) 55%, rgba(8,8,8,.9) 100%)}
 button{font-family:inherit; cursor:pointer}
 input,textarea,select{font-family:inherit; font-size:14px}
 
 /* ---------- Header ---------- */
 header{
-  position:sticky; top:0; z-index:40; background:rgba(255,255,255,.9); backdrop-filter:blur(10px);
+  position:sticky; top:0; z-index:40; background:rgba(12,12,13,.62); backdrop-filter:blur(14px);
   border-bottom:1px solid var(--line);
 }
 .hd-in{max-width:1240px; margin:0 auto; padding:0 32px; min-height:68px; display:flex; align-items:center; gap:28px; flex-wrap:wrap}
@@ -57,25 +66,25 @@ header{
 .tabs{display:flex; gap:0; height:68px}
 .tab{border:0; background:transparent; padding:0 18px; border-radius:0; font-weight:500; font-size:13.5px; color:var(--muted); border-bottom:2px solid transparent; transition:.18s; height:100%; display:flex; align-items:center; letter-spacing:.01em}
 .tab:hover{color:var(--ink)}
-.tab.on{color:var(--ink); border-bottom-color:var(--ink); font-weight:700}
+.tab.on{color:var(--ink); border-bottom-color:var(--rose); font-weight:700}
 .sync{margin-left:auto}
 .sync{font-size:11px; padding:4px 10px; border-radius:20px; font-weight:700; border:1px solid var(--line); display:flex; align-items:center; gap:6px}
 .sync .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
 .sync.live .dot{background:var(--ok)} .sync.local .dot{background:var(--amber)}
 .userbox{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted)}
 .userbox .ue{font-weight:700; color:var(--ink); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.userbox .lo{border:1px solid var(--line); background:#fff; border-radius:2px; padding:4px 10px; font-size:11px; color:var(--muted); cursor:pointer}
+.userbox .lo{border:1px solid var(--line); background:rgba(255,255,255,0.05); border-radius:2px; padding:4px 10px; font-size:11px; color:var(--muted); cursor:pointer}
 .userbox .lo:hover{border-color:var(--ink); color:var(--ink)}
-#loginGate{position:fixed; inset:0; z-index:100; background:linear-gradient(160deg,#fff 0%,var(--tint) 100%); display:flex; align-items:center; justify-content:center; padding:24px}
+#loginGate{position:fixed; inset:0; z-index:100; background:linear-gradient(160deg,#101012 0%,#070708 100%); display:flex; align-items:center; justify-content:center; padding:24px}
 .lg-card{max-width:420px; width:100%; text-align:center}
 .lg-card .lg-eyebrow{font-size:10px; letter-spacing:.24em; text-transform:uppercase; color:var(--rose); font-weight:700; margin-bottom:10px}
 .lg-card h1{font-family:var(--serif); font-size:30px; margin:0 0 6px; color:var(--ink); letter-spacing:-.01em}
 .lg-card .lg-sub{color:var(--muted); font-size:13px; margin:0 0 28px; line-height:1.8}
-.lg-btn{display:inline-flex; align-items:center; gap:10px; border:1px solid var(--ink); background:var(--ink); color:#fff; padding:12px 22px; border-radius:3px; font-size:14px; font-weight:700; cursor:pointer; transition:.15s}
-.lg-btn:hover{background:var(--rose); border-color:var(--rose)}
+.lg-btn{display:inline-flex; align-items:center; gap:10px; border:1px solid var(--rose); background:var(--rose); color:#07140A; padding:12px 22px; border-radius:3px; font-size:14px; font-weight:700; cursor:pointer; transition:.15s}
+.lg-btn:hover{filter:brightness(1.12)}
 .lg-btn:disabled{opacity:.6; cursor:default}
 .lg-note{margin-top:22px; font-size:11.5px; color:var(--muted)}
-.lg-err{margin-top:18px; font-size:12.5px; color:var(--danger); background:#FBEAE8; border:1px solid #F0CFCB; border-radius:4px; padding:10px 14px}
+.lg-err{margin-top:18px; font-size:12.5px; color:var(--danger); background:rgba(255,90,90,0.12); border:1px solid rgba(255,90,90,0.35); border-radius:4px; padding:10px 14px}
 
 main{max-width:1240px; margin:0 auto; padding:40px 32px 90px}
 .view{display:none} .view.on{display:block; animation:fade .3s ease}
@@ -83,15 +92,15 @@ main{max-width:1240px; margin:0 auto; padding:40px 32px 90px}
 
 /* ---------- Common ---------- */
 .panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow)}
-.btn{border:1px solid #C7CFD8; background:var(--panel); color:var(--ink); padding:10px 18px; border-radius:2px; font-weight:600; font-size:13px; transition:.15s}
-.btn:hover{border-color:var(--ink); background:#F6F8FA}
-.btn.primary{background:var(--ink); border-color:var(--ink); color:#fff}
-.btn.primary:hover{background:var(--rose); border-color:var(--rose); filter:none}
+.btn{border:1px solid rgba(255,255,255,0.18); background:var(--panel); color:var(--ink); padding:10px 18px; border-radius:2px; font-weight:600; font-size:13px; transition:.15s}
+.btn:hover{border-color:var(--ink); background:rgba(255,255,255,0.06)}
+.btn.primary{background:var(--rose); border-color:var(--rose); color:#07140A}
+.btn.primary:hover{filter:brightness(1.12)}
 .btn.ghost{background:transparent; border-color:transparent; color:var(--rose)}
 .btn.ghost:hover{background:var(--rose-bg); border-color:transparent}
 .btn:disabled{opacity:.5; cursor:not-allowed}
 .eyebrow{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--rose); font-weight:700}
-.in{width:100%; padding:11px 13px; border:1px solid #C7CFD8; border-radius:2px; background:#fff; color:var(--ink); transition:.15s}
+.in{width:100%; padding:11px 13px; border:1px solid rgba(255,255,255,0.18); border-radius:2px; background:rgba(255,255,255,0.05); color:var(--ink); transition:.15s}
 .in:focus{outline:none; border-color:var(--rose); box-shadow:0 0 0 3px var(--rose-bg)}
 textarea.in{resize:vertical; min-height:64px; line-height:1.6}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
@@ -136,16 +145,16 @@ textarea.in{resize:vertical; min-height:64px; line-height:1.6}
 .fieldrow:last-child{border-radius:0}
 .fieldhead{display:flex; align-items:center; gap:8px; margin-bottom:6px}
 .fieldhead .lbl{font-weight:700; font-size:13px}
-.fieldval{white-space:pre-wrap; font-size:13.5px; color:#3c3742}
+.fieldval{white-space:pre-wrap; font-size:13.5px; color:#D8DCDC}
 .fieldval.empty{color:var(--muted); font-style:italic}
 
 /* ---------- DB view ---------- */
 .toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px}
 .toolbar .in{flex:1; min-width:200px}
 .chips{display:flex; gap:7px; flex-wrap:wrap; margin-bottom:18px}
-.chip{border:1px solid var(--line); background:#fff; padding:7px 14px; border-radius:2px; font-size:12.5px; font-weight:500; color:var(--muted); transition:.15s}
+.chip{border:1px solid var(--line); background:rgba(255,255,255,0.05); padding:7px 14px; border-radius:2px; font-size:12.5px; font-weight:500; color:var(--muted); transition:.15s}
 .chip:hover{border-color:var(--line-strong); color:var(--ink)}
-.chip.on{background:var(--ink); color:#fff; border-color:var(--ink); font-weight:700}
+.chip.on{background:var(--rose); color:#07140A; border-color:var(--rose); font-weight:700}
 .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:18px}
 .card{padding:24px 24px 20px; cursor:pointer; transition:.2s cubic-bezier(.4,0,.2,1); display:flex; flex-direction:column; gap:12px; position:relative; overflow:hidden}
 .card::before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--rose); transform:scaleY(0); transform-origin:top; transition:.2s}
@@ -168,7 +177,7 @@ textarea.in{resize:vertical; min-height:64px; line-height:1.6}
 .drawer.on{transform:none}
 .dr-hd{position:sticky; top:0; background:rgba(255,255,255,.94); backdrop-filter:blur(8px); padding:20px 24px; border-bottom:1px solid var(--line); display:flex; align-items:flex-start; gap:12px; z-index:2}
 .dr-hd .x{margin-left:auto; border:0; background:var(--tint); width:34px; height:34px; border-radius:2px; font-size:18px; color:var(--muted); transition:.15s}
-.dr-hd .x:hover{background:var(--ink); color:#fff}
+.dr-hd .x:hover{background:var(--rose); color:#07140A}
 .dr-name{font-family:var(--serif); font-size:23px; font-weight:700; letter-spacing:-.01em}
 .dr-body{padding:18px 22px 60px}
 .dr-cat{margin-bottom:18px}
@@ -176,14 +185,14 @@ textarea.in{resize:vertical; min-height:64px; line-height:1.6}
 .dr-field{margin-top:12px}
 .dr-field .fieldhead{justify-content:space-between}
 .dr-field .fieldhead .left{display:flex; align-items:center; gap:8px}
-.dr-acc{border:1px solid var(--line); border-radius:6px; margin-bottom:10px; background:#fff; overflow:hidden}
+.dr-acc{border:1px solid var(--line); border-radius:6px; margin-bottom:10px; background:rgba(255,255,255,0.05); overflow:hidden}
 .dr-acc>summary{list-style:none; cursor:pointer; padding:11px 14px; font-weight:700; font-size:13px; color:var(--slate-ink); background:var(--tint); display:flex; align-items:center}
 .dr-acc>summary::-webkit-details-marker{display:none}
 .dr-acc>summary::after{content:"▾"; margin-left:auto; color:var(--muted); transition:transform .2s}
 .dr-acc[open]>summary{border-bottom:1px solid var(--line)}
 .dr-acc[open]>summary::after{transform:rotate(180deg)}
 .dr-acc-body{padding:8px 14px 14px}
-.saveflash{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--ink); color:#fff; padding:11px 22px; border-radius:30px; font-weight:700; font-size:13px; transition:.3s; z-index:60; box-shadow:var(--shadow)}
+.saveflash{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--rose); color:#07140A; padding:11px 22px; border-radius:30px; font-weight:700; font-size:13px; transition:.3s; z-index:60; box-shadow:var(--shadow)}
 .saveflash.on{transform:translateX(-50%)}
 
 /* ---------- Settings ---------- */
@@ -194,7 +203,7 @@ textarea.in{resize:vertical; min-height:64px; line-height:1.6}
 .kv{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
 code{background:var(--tint); padding:2px 6px; border-radius:2px; font-size:12px}
 .pill{font-size:11px; font-weight:800; padding:3px 10px; border-radius:20px}
-.pill.on{background:#E5F2EC; color:var(--ok)} .pill.off{background:var(--hand-bg); color:var(--hand)}
+.pill.on{background:rgba(34,208,122,0.16); color:var(--ok)} .pill.off{background:var(--hand-bg); color:var(--hand)}
 
 /* import banner */
 .import-banner{display:flex; align-items:center; gap:14px; justify-content:space-between; background:var(--rose-bg); border:1px solid transparent; border-left:3px solid var(--rose); color:var(--rose-ink); padding:16px 20px; border-radius:2px; margin-bottom:18px; flex-wrap:wrap}
@@ -205,15 +214,15 @@ code{background:var(--tint); padding:2px 6px; border-radius:2px; font-size:12px}
 .cal-main{padding:18px}
 .cal-head{display:flex; align-items:center; gap:10px; margin-bottom:12px}
 .cal-title{font-size:17px; font-weight:800; min-width:130px; text-align:center}
-.cal-nav{border:1px solid var(--line); background:#fff; width:34px; height:34px; border-radius:9px; font-size:18px; color:var(--ink); line-height:1}
-.cal-nav:hover{border-color:#dcd4cf}
+.cal-nav{border:1px solid var(--line); background:rgba(255,255,255,0.05); width:34px; height:34px; border-radius:9px; font-size:18px; color:var(--ink); line-height:1}
+.cal-nav:hover{border-color:rgba(255,255,255,0.3)}
 .cal-legend{display:flex; gap:14px; flex-wrap:wrap; margin-bottom:12px; font-size:11px; color:var(--muted)}
 .cal-legend span{display:inline-flex; align-items:center; gap:5px}
 .cal-legend i{width:9px; height:9px; border-radius:3px; display:inline-block}
 .cal-dow{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:4px}
 .cal-dow span{text-align:center; font-size:11px; font-weight:700; color:var(--muted); padding:4px 0}
 .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px}
-.cal-cell{min-height:74px; border:1px solid var(--line); border-radius:8px; padding:5px 6px; background:#fff; display:flex; flex-direction:column; gap:3px; overflow:hidden}
+.cal-cell{min-height:74px; border:1px solid var(--line); border-radius:8px; padding:5px 6px; background:rgba(255,255,255,0.05); display:flex; flex-direction:column; gap:3px; overflow:hidden}
 .cal-cell.dim{background:var(--tint); opacity:.6}
 .cal-cell.today{border-color:var(--rose); box-shadow:0 0 0 1px var(--rose)}
 .cal-cell .dnum{font-size:11px; font-weight:700; color:var(--muted)}
@@ -247,6 +256,10 @@ code{background:var(--tint); padding:2px 6px; border-radius:2px; font-size:12px}
 </style>
 </head>
 <body>
+
+<!-- 3D背景（全画面・固定） -->
+<div id="bg3d"><spline-viewer url="https://prod.spline.design/Slk6b8kz3LRlKiyk/scene.splinecode"></spline-viewer></div>
+<div id="bg3dveil"></div>
 
 <header>
   <div class="hd-in">
@@ -830,9 +843,9 @@ function renderCompanyESSection(cid){
   const logs = (typeof ES_LOGS!=="undefined") ? ES_LOGS.filter(l=>l.companyId===cid) : [];
   let h = `<div class="dr-cat" style="margin-top:18px"><div class="catbar A">サンプルES（${samples.length}件）</div>`;
   if(samples.length){
-    h += samples.map(s=>`<div class="dr-field" style="padding:12px;background:#fff;border:1px solid var(--line);border-radius:10px;margin-top:8px">
+    h += samples.map(s=>`<div class="dr-field" style="padding:12px;background:rgba(255,255,255,0.05);border:1px solid var(--line);border-radius:10px;margin-top:8px">
       ${s.question?`<div style="font-weight:700;font-size:13px;margin-bottom:4px">${esc(s.question)}</div>`:""}
-      <div style="font-size:12.5px;color:#3c3742;white-space:pre-wrap;margin-bottom:6px">${esc(s.body)}</div>
+      <div style="font-size:12.5px;color:#D8DCDC;white-space:pre-wrap;margin-bottom:6px">${esc(s.body)}</div>
       ${s.note?`<div style="font-size:11.5px;color:var(--ai);background:var(--ai-bg);padding:4px 10px;border-radius:6px;display:inline-block">${esc(s.note)}</div>`:""}
     </div>`).join("");
   } else {
@@ -842,7 +855,7 @@ function renderCompanyESSection(cid){
 
   h += `<div class="dr-cat" style="margin-top:18px"><div class="catbar B">この企業の添削ログ（${logs.length}件）</div>`;
   if(logs.length){
-    h += logs.map(l=>`<div class="dr-field" style="padding:12px;background:#fff;border:1px solid var(--line);border-radius:10px;margin-top:8px;cursor:pointer" onclick="openLog('${l.id}')">
+    h += logs.map(l=>`<div class="dr-field" style="padding:12px;background:rgba(255,255,255,0.05);border:1px solid var(--line);border-radius:10px;margin-top:8px;cursor:pointer" onclick="openLog('${l.id}')">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
         <span class="badge b-B">${esc(l.studentName||"-")}</span>
         ${l.feedback?'<span class="badge b-hand">コメント済</span>':''}
@@ -1204,7 +1217,7 @@ function openStudent(id){
   // ① 感情グラフ（メイン・最上部・常時展開）
   html+=`<div class="dr-cat"><div class="catbar A">感情グラフ（年齢×感情点 -100〜+100）</div>
     <div class="dr-field">
-      <svg id="emoChart" viewBox="0 0 600 240" style="width:100%;background:#FAF8F6;border:1px solid var(--line);border-radius:10px;display:block"></svg>
+      <svg id="emoChart" viewBox="0 0 600 240" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--line);border-radius:10px;display:block"></svg>
       <div id="emoList" style="margin-top:12px;display:flex;flex-direction:column;gap:6px"></div>
       <div class="kv" style="margin-top:8px"><input class="in" id="emoAge" type="number" placeholder="年齢" style="max-width:90px"><input class="in" id="emoScore" type="number" min="-100" max="100" placeholder="点(-100〜+100)" style="max-width:130px"><input class="in" id="emoEvent" placeholder="出来事" style="flex:1"><button class="btn" onclick="addEmotion()">＋追加</button></div>
     </div></div>`;
@@ -1223,10 +1236,10 @@ function openStudent(id){
   STU_CHECKS.forEach(grp=>{
     checkInner+=`<div class="dr-field"><div class="fieldhead"><span class="lbl">■${grp.cat}</span></div><div style="display:flex;flex-direction:column;gap:6px">`;
     grp.items.forEach(item=>{ const val=s.checks[item]||"";
-      checkInner+=`<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff">
+      checkInner+=`<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,0.05)">
         <span style="flex:1;font-size:13px">${esc(item)}</span>
-        <button class="chk-btn ${val==='o'?'on':''}" data-item="${esc(item)}" data-v="o" onclick="toggleCheck(this)" style="width:32px;height:28px;border-radius:6px;border:1px solid var(--line);background:${val==='o'?'#3E8E6E':'#fff'};color:${val==='o'?'#fff':'var(--muted)'};font-weight:700;cursor:pointer">〇</button>
-        <button class="chk-btn ${val==='x'?'on':''}" data-item="${esc(item)}" data-v="x" onclick="toggleCheck(this)" style="width:32px;height:28px;border-radius:6px;border:1px solid var(--line);background:${val==='x'?'#C0504D':'#fff'};color:${val==='x'?'#fff':'var(--muted)'};font-weight:700;cursor:pointer">×</button>
+        <button class="chk-btn ${val==='o'?'on':''}" data-item="${esc(item)}" data-v="o" onclick="toggleCheck(this)" style="width:32px;height:28px;border-radius:6px;border:1px solid var(--line);background:${val==='o'?'#22D07A':'rgba(255,255,255,0.06)'};color:${val==='o'?'#fff':'var(--muted)'};font-weight:700;cursor:pointer">〇</button>
+        <button class="chk-btn ${val==='x'?'on':''}" data-item="${esc(item)}" data-v="x" onclick="toggleCheck(this)" style="width:32px;height:28px;border-radius:6px;border:1px solid var(--line);background:${val==='x'?'#FF5A5A':'rgba(255,255,255,0.06)'};color:${val==='x'?'#fff':'var(--muted)'};font-weight:700;cursor:pointer">×</button>
       </div>`;
     });
     checkInner+=`</div></div>`;
@@ -1259,7 +1272,7 @@ function renderGoalItems(){
   const s=STUDENTS.find(x=>x.id===curStu); if(!s) return;
   const wrap=document.getElementById("goalItems"); if(!wrap) return;
   if(!s.goals.items.length){ wrap.innerHTML='<div style="color:var(--muted);font-size:12px">＋項目を追加で達成すべき項目を登録できます</div>'; return; }
-  wrap.innerHTML = s.goals.items.map((g,i)=>`<div style="display:grid;grid-template-columns:1fr 130px 100px 32px;gap:6px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff">
+  wrap.innerHTML = s.goals.items.map((g,i)=>`<div style="display:grid;grid-template-columns:1fr 130px 100px 32px;gap:6px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,0.05)">
     <input class="in" value="${esc(g.text||"")}" placeholder="達成項目" onchange="updateGoal(${i},'text',this.value)" style="padding:7px 10px;font-size:12.5px">
     <input class="in" type="date" value="${esc(g.due||"")}" onchange="updateGoal(${i},'due',this.value)" style="padding:7px 10px;font-size:12px">
     <select class="in" onchange="updateGoal(${i},'status',this.value)" style="padding:7px 10px;font-size:12px">
@@ -1302,25 +1315,25 @@ function renderEmotions(){
   const list=document.getElementById("emoList");
   if(list){
     if(!s.emotions.length) list.innerHTML='<div style="color:var(--muted);font-size:12px">下のフォームから年齢・点数・出来事を追加するとグラフが描かれます</div>';
-    else list.innerHTML = s.emotions.map((e,i)=>`<div style="display:flex;gap:8px;align-items:center;padding:6px 10px;background:#fff;border:1px solid var(--line);border-radius:7px;font-size:12.5px"><b style="min-width:46px">${e.age}歳</b><span style="min-width:60px;color:${e.score>=0?'var(--ok)':'var(--danger)'};font-weight:700">${e.score>=0?'+':''}${e.score}</span><span style="flex:1">${esc(e.event||"")}</span><button class="btn ghost" onclick="rmEmotion(${i})" style="padding:2px 8px;color:var(--danger)">×</button></div>`).join("");
+    else list.innerHTML = s.emotions.map((e,i)=>`<div style="display:flex;gap:8px;align-items:center;padding:6px 10px;background:rgba(255,255,255,0.05);border:1px solid var(--line);border-radius:7px;font-size:12.5px"><b style="min-width:46px">${e.age}歳</b><span style="min-width:60px;color:${e.score>=0?'var(--ok)':'var(--danger)'};font-weight:700">${e.score>=0?'+':''}${e.score}</span><span style="flex:1">${esc(e.event||"")}</span><button class="btn ghost" onclick="rmEmotion(${i})" style="padding:2px 8px;color:var(--danger)">×</button></div>`).join("");
   }
   const svg=document.getElementById("emoChart"); if(!svg) return;
   const W=600,H=240,PL=40,PR=20,PT=20,PB=30;
   const pts=s.emotions; const maxA=Math.max(20,...pts.map(p=>p.age),1);
   const x=a=> PL + (W-PL-PR)*a/maxA;
   const y=v=> PT + (H-PT-PB)*(100-v)/200;
-  let g=`<defs><linearGradient id="eg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C0617C" stop-opacity=".25"/><stop offset="1" stop-color="#C0617C" stop-opacity="0"/></linearGradient></defs>`;
+  let g=`<defs><linearGradient id="eg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16E000" stop-opacity=".25"/><stop offset="1" stop-color="#16E000" stop-opacity="0"/></linearGradient></defs>`;
   // grid
-  [-100,-50,0,50,100].forEach(v=>{ g+=`<line x1="${PL}" y1="${y(v)}" x2="${W-PR}" y2="${y(v)}" stroke="${v===0?'#8C8591':'#ECE6E2'}" stroke-width="${v===0?1.2:1}" stroke-dasharray="${v===0?'':'3,3'}"/><text x="${PL-8}" y="${y(v)+4}" font-size="10" fill="#8C8591" text-anchor="end">${v>0?'+':''}${v}</text>`; });
+  [-100,-50,0,50,100].forEach(v=>{ g+=`<line x1="${PL}" y1="${y(v)}" x2="${W-PR}" y2="${y(v)}" stroke="${v===0?'#9AA0A0':'rgba(255,255,255,0.14)'}" stroke-width="${v===0?1.2:1}" stroke-dasharray="${v===0?'':'3,3'}"/><text x="${PL-8}" y="${y(v)+4}" font-size="10" fill="#9AA0A0" text-anchor="end">${v>0?'+':''}${v}</text>`; });
   // x-axis
-  for(let a=0;a<=maxA;a+=5){ g+=`<text x="${x(a)}" y="${H-8}" font-size="10" fill="#8C8591" text-anchor="middle">${a}歳</text>`; }
+  for(let a=0;a<=maxA;a+=5){ g+=`<text x="${x(a)}" y="${H-8}" font-size="10" fill="#9AA0A0" text-anchor="middle">${a}歳</text>`; }
   if(pts.length){
     const d=pts.map((p,i)=>`${i?'L':'M'}${x(p.age)},${y(p.score)}`).join(" ");
     const area=`M${x(pts[0].age)},${y(0)} `+pts.map(p=>`L${x(p.age)},${y(p.score)}`).join(" ")+` L${x(pts[pts.length-1].age)},${y(0)} Z`;
-    g+=`<path d="${area}" fill="url(#eg)"/><path d="${d}" stroke="#C0617C" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
-    pts.forEach(p=>{ g+=`<circle cx="${x(p.age)}" cy="${y(p.score)}" r="4" fill="#fff" stroke="#C0617C" stroke-width="2"><title>${p.age}歳: ${p.score>=0?'+':''}${p.score} ${p.event||''}</title></circle>`; });
+    g+=`<path d="${area}" fill="url(#eg)"/><path d="${d}" stroke="#16E000" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+    pts.forEach(p=>{ g+=`<circle cx="${x(p.age)}" cy="${y(p.score)}" r="4" fill="#fff" stroke="#16E000" stroke-width="2"><title>${p.age}歳: ${p.score>=0?'+':''}${p.score} ${p.event||''}</title></circle>`; });
   } else {
-    g+=`<text x="${W/2}" y="${H/2}" font-size="12" fill="#8C8591" text-anchor="middle">データを追加するとグラフが表示されます</text>`;
+    g+=`<text x="${W/2}" y="${H/2}" font-size="12" fill="#9AA0A0" text-anchor="middle">データを追加するとグラフが表示されます</text>`;
   }
   svg.innerHTML=g;
 }
@@ -1424,7 +1437,7 @@ function esModeInstruction(){
 let ES_QUESTIONS=[{question:"",limit:400,body:""}];
 function renderESQuestions(){
   const wrap=document.getElementById("esQuestionList"); if(!wrap) return;
-  wrap.innerHTML=ES_QUESTIONS.map((q,i)=>`<div class="es-q" style="border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;background:#fff">
+  wrap.innerHTML=ES_QUESTIONS.map((q,i)=>`<div class="es-q" style="border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;background:rgba(255,255,255,0.05)">
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
       <span style="font-weight:800;font-size:12px;color:var(--rose);white-space:nowrap">設問 ${i+1}</span>
       <input class="in esq-text" data-i="${i}" placeholder="設問内容（例: 学生時代に最も力を入れたこと）" value="${esc(q.question||"")}" style="flex:1">
@@ -1468,9 +1481,11 @@ function renderMultiResult(log){
     ${answers.map((a,i)=>`<div style="margin-bottom:16px;border:1px solid var(--line);border-radius:10px;overflow:hidden">
       <div style="background:var(--rose-bg);padding:10px 14px;font-weight:800;font-size:13px;color:var(--rose-ink)">設問${i+1}：${esc(a.question||"")}（${(a.final_es||"").length}字）</div>
       <div style="padding:14px">
+        <div class="eyebrow" style="margin-bottom:6px">添削文章（このまま提出できます）</div>
         <div style="white-space:pre-wrap;font-size:14px;line-height:1.9">${esc(a.final_es||"")}</div>
         <button class="btn primary" style="margin-top:10px;padding:5px 14px;font-size:12px" onclick="copyMultiES('${log.id}',${i})">📋 この設問をコピー</button>
-        ${a.note?`<div style="margin-top:10px;font-size:12.5px;color:var(--muted);background:var(--tint);padding:8px 12px;border-radius:8px"><b>ポイント：</b>${esc(a.note)}</div>`:""}
+        ${(a.summary||a.note)?`<div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)"><div class="eyebrow" style="margin-bottom:5px">要点</div><div style="white-space:pre-wrap;font-size:12.5px;color:var(--muted)">${esc(a.summary||a.note||"")}</div></div>`:""}
+        ${(a.key_fixes&&a.key_fixes.length)?`<div style="margin-top:10px"><div class="eyebrow" style="margin-bottom:5px">指摘ポイント</div><ul style="margin:0;padding-left:18px;font-size:12.5px;color:var(--muted)">${a.key_fixes.map(x=>`<li style="margin-bottom:3px">${esc(x)}</li>`).join("")}</ul></div>`:""}
       </div></div>`).join("")}
     <div style="margin-top:8px;padding-top:16px;border-top:1px solid var(--line)">
       <div class="eyebrow" style="margin-bottom:6px">この結果へのコメント（次回以降に反映されます）</div>
@@ -1603,7 +1618,7 @@ ${pastFeedback?"# 過去の添削への運用者コメント（書き方の参�
 {
   "axis": "全設問を貫く唯一の軸（30〜60字。これが全ESの一貫性の核）。複数の軸を混ぜない",
   "answers": [
-    {"question": "設問1の設問文", "final_es": "設問1の完成版ES本文のみ。指定字数ちょうど。です・ます調。axisを保ちつつ設問に最適化し、学生固有のエピソード・数字・思考プロセス・企業接続を盛り込む。注釈・前置きは書かない", "note": "この設問での意図・工夫をやさしい言葉で1〜2行"}
+    {"question": "設問1の設問文", "final_es": "設問1の完成版ES本文のみ。指定字数ちょうど。です・ます調。axisを保ちつつ設問に最適化し、学生固有のエピソード・数字・思考プロセス・企業接続を盛り込む。注釈・前置きは書かない", "summary": "この設問のESの要点を1〜2行でやさしく（何を軸に、どう書いたか）", "key_fixes": ["さらに良くする・本人に確認したい指摘ポイントをやさしい言葉で1行", "2つ目（最大3つ。無ければ減らす）"]}
   ]
 }`;
 
@@ -1646,9 +1661,9 @@ function renderDraftResult(log){
       <button class="btn ghost" style="padding:3px 10px;font-size:12px" onclick="gotoStudentFromLog('${log.studentId||""}')">👤 学生情報を見る</button>
       <span style="color:var(--muted);font-size:12px;margin-left:auto">${new Date(log.created_at).toLocaleString("ja-JP")}</span>
     </div>
-    ${log.question?`<div style="font-size:13px;font-weight:700;margin-bottom:14px;padding:10px 14px;background:#FAF8F6;border-radius:8px">設問: ${esc(log.question)}（${log.limit||400}字）</div>`:""}
-    ${r.axis?`<div style="margin-bottom:14px"><div class="eyebrow" style="margin-bottom:6px">伝える軸（1つに絞った）</div><div style="font-size:15px;font-weight:700;background:#FBEEF1;padding:12px 16px;border-radius:10px;border-left:3px solid var(--rose);color:var(--rose-ink)">${esc(r.axis)}</div></div>`:""}
-    ${r.selected_experience?`<div style="margin-bottom:14px"><div class="eyebrow" style="margin-bottom:6px">選んだ体験（深掘る対象）</div><div style="white-space:pre-wrap;font-size:13.5px;background:#FAF8F6;padding:12px 14px;border-radius:10px">${esc(r.selected_experience)}</div></div>`:""}
+    ${log.question?`<div style="font-size:13px;font-weight:700;margin-bottom:14px;padding:10px 14px;background:rgba(255,255,255,0.05);border-radius:8px">設問: ${esc(log.question)}（${log.limit||400}字）</div>`:""}
+    ${r.axis?`<div style="margin-bottom:14px"><div class="eyebrow" style="margin-bottom:6px">伝える軸（1つに絞った）</div><div style="font-size:15px;font-weight:700;background:rgba(22,224,0,0.10);padding:12px 16px;border-radius:10px;border-left:3px solid var(--rose);color:var(--rose-ink)">${esc(r.axis)}</div></div>`:""}
+    ${r.selected_experience?`<div style="margin-bottom:14px"><div class="eyebrow" style="margin-bottom:6px">選んだ体験（深掘る対象）</div><div style="white-space:pre-wrap;font-size:13.5px;background:rgba(255,255,255,0.05);padding:12px 14px;border-radius:10px">${esc(r.selected_experience)}</div></div>`:""}
     ${r.strategy?`<div style="margin-bottom:14px"><div class="eyebrow" style="margin-bottom:6px">作成戦略</div><div style="white-space:pre-wrap;font-size:13.5px;background:var(--ai-bg);padding:14px;border-radius:10px;color:var(--ai)">${esc(r.strategy)}</div></div>`:""}
     ${r.draft?`<div style="margin-bottom:14px"><div class="eyebrow" style="margin-bottom:6px">ES下書き本文（${(r.draft||"").length}字）</div><div style="white-space:pre-wrap;font-size:14px;background:var(--rose-bg);padding:18px;border-radius:10px;line-height:1.85;border-left:3px solid var(--rose)">${esc(r.draft)}</div><button class="btn" style="margin-top:8px" onclick="copyDraft('${log.id}')">📋 本文をコピー</button> <button class="btn ghost" onclick="sendDraftToEdit('${log.id}')">添削対象に流し込む</button></div>`:""}
     ${(r.key_points&&r.key_points.length)?`<div style="margin-bottom:14px"><div class="eyebrow" style="margin-bottom:6px">この下書きで意図したポイント</div><ul style="margin:0;padding-left:20px;font-size:13.5px">${r.key_points.map(x=>`<li style="margin-bottom:4px">${esc(x)}</li>`).join("")}</ul></div>`:""}
@@ -1837,7 +1852,7 @@ ${pastFeedback?"# 過去の添削への運用者コメント（添削スタイ�
 {
   "axis": "全設問を貫く唯一の軸（30〜60字。全ESの一貫性の核）。複数の軸を混ぜない",
   "answers": [
-    {"question": "設問1の設問文", "final_es": "設問1の完成版ES本文のみ。指定字数ちょうど。です・ます調。axisを保ちつつ設問に最適化し、学生固有のエピソード・数字・思考プロセス・企業接続を盛り込む。注釈・前置きは書かない", "note": "この設問で何をどう直したか（添削ポイント）をやさしい言葉で1〜2行"}
+    {"question": "設問1の設問文", "final_es": "設問1の完成版ES本文のみ。指定字数ちょうど。です・ます調。axisを保ちつつ設問に最適化し、学生固有のエピソード・数字・思考プロセス・企業接続を盛り込む。注釈・前置きは書かない", "summary": "添削の要点を1〜2行でやさしく（何が良くて、何を直したか）", "key_fixes": ["直すべき・直した指摘ポイントを『どう直すか』までやさしい言葉で1行", "2つ目", "3つ目（最大3つ。無ければ減らす）"]}
   ]
 }`;
 
@@ -1892,7 +1907,7 @@ function renderESResult(log){
     ${r.personalization?`<div style="margin-bottom:12px"><div class="eyebrow" style="margin-bottom:6px">その人らしさを出すなら</div><div style="white-space:pre-wrap;font-size:13.5px;background:var(--ai-bg);padding:12px 14px;border-radius:10px;color:var(--ai)">${esc(r.personalization)}</div></div>`:""}
     ${(r.concrete_suggestions&&r.concrete_suggestions.length)?`<div style="margin-bottom:12px"><div class="eyebrow" style="margin-bottom:6px">具体的な提案</div><ul style="margin:0;padding-left:20px;font-size:13.5px">${r.concrete_suggestions.map(x=>`<li style="margin-bottom:3px">${esc(x)}</li>`).join("")}</ul></div>`:""}
     ${(r.framework_check||r.structure||r.alignment)?`<details style="margin-bottom:8px"><summary style="cursor:pointer;font-size:12.5px;color:var(--muted);font-weight:700">詳しい分析を見る</summary>
-      ${r.framework_check?`<div style="margin:10px 0"><div class="eyebrow" style="margin-bottom:6px">フレーム評価</div><div style="white-space:pre-wrap;font-size:13px;background:#FBEEF1;padding:12px;border-radius:10px;border-left:3px solid var(--rose)">${esc(r.framework_check)}</div></div>`:""}
+      ${r.framework_check?`<div style="margin:10px 0"><div class="eyebrow" style="margin-bottom:6px">フレーム評価</div><div style="white-space:pre-wrap;font-size:13px;background:rgba(22,224,0,0.10);padding:12px;border-radius:10px;border-left:3px solid var(--rose)">${esc(r.framework_check)}</div></div>`:""}
       ${r.structure?`<div style="margin:10px 0"><div class="eyebrow" style="margin-bottom:6px">構成・論理性</div><div style="white-space:pre-wrap;font-size:13px">${esc(r.structure)}</div></div>`:""}
       ${r.alignment?`<div style="margin:10px 0"><div class="eyebrow" style="margin-bottom:6px">企業×学生の整合性</div><div style="white-space:pre-wrap;font-size:13px">${esc(r.alignment)}</div></div>`:""}
     </details>`:""}
@@ -1998,12 +2013,12 @@ function renderSampleList(cid){
   if(!samples.length){ wrap.innerHTML='<div style="color:var(--muted);font-size:12px">サンプルES未登録</div>'; return; }
   wrap.innerHTML=samples.map((s,i)=>{
     const bad=s.quality==="bad";
-    const tag=bad?`<span style="font-size:10.5px;font-weight:700;color:var(--danger);background:#FBEAE8;padding:2px 8px;border-radius:2px">⚠️ 良くない例</span>`
-                 :`<span style="font-size:10.5px;font-weight:700;color:var(--ok);background:#E4F3EC;padding:2px 8px;border-radius:2px">✅ 良い例</span>`;
-    return `<div style="padding:12px;background:#fff;border:1px solid ${bad?'#F0CFCB':'var(--line)'};border-left:3px solid ${bad?'var(--danger)':'var(--ok)'};border-radius:6px">
+    const tag=bad?`<span style="font-size:10.5px;font-weight:700;color:var(--danger);background:rgba(255,90,90,0.12);padding:2px 8px;border-radius:2px">⚠️ 良くない例</span>`
+                 :`<span style="font-size:10.5px;font-weight:700;color:var(--ok);background:rgba(34,208,122,0.16);padding:2px 8px;border-radius:2px">✅ 良い例</span>`;
+    return `<div style="padding:12px;background:rgba(255,255,255,0.05);border:1px solid ${bad?'rgba(255,90,90,0.35)':'var(--line)'};border-left:3px solid ${bad?'var(--danger)':'var(--ok)'};border-radius:6px">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">${tag}${s.question?`<span style="font-weight:700;font-size:13px">${esc(s.question)}</span>`:""}<button class="btn ghost" onclick="rmSample('${cid}','${s.id}')" style="margin-left:auto;color:var(--danger);padding:2px 8px">削除</button></div>
     <div style="font-size:12.5px;color:var(--muted);white-space:pre-wrap;margin-bottom:6px">${esc(s.body)}</div>
-    ${bad&&s.reason?`<div style="font-size:11.5px;color:var(--danger);background:#FBEAE8;padding:5px 10px;border-radius:4px;margin-bottom:4px"><b>良くなかった理由：</b>${esc(s.reason)}</div>`:""}
+    ${bad&&s.reason?`<div style="font-size:11.5px;color:var(--danger);background:rgba(255,90,90,0.12);padding:5px 10px;border-radius:4px;margin-bottom:4px"><b>良くなかった理由：</b>${esc(s.reason)}</div>`:""}
     ${s.note?`<div style="font-size:11.5px;color:var(--ai);background:var(--ai-bg);padding:4px 10px;border-radius:4px;display:inline-block">${esc(s.note)}</div>`:""}
   </div>`;}).join("");
 }
